@@ -10,14 +10,15 @@ public class PlayerMovement : MonoBehaviour
     public float sprintMultiplier = 1.5f;
     public float gravity = -9.81f * 2;
     public float jumpHeight = 3f;
-
+    public float airBrake = 8f; // rate at which backward input slows momentum
     public Transform groundCheck;
     public float groundDistance = 0.4f;
     public LayerMask groundMask;
-
     Vector3 velocity;
-
     bool isGrounded;
+    private bool isSprinting;
+    private Vector3 horizontalMomentum;
+    
 
     // Update is called once per frame
     private float groundCheckOffset;
@@ -25,6 +26,8 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         groundCheckOffset = Mathf.Abs(groundCheck.localPosition.y);
+        isSprinting = false;
+        horizontalMomentum = Vector3.zero;
     }
 
     void Update()
@@ -48,13 +51,31 @@ public class PlayerMovement : MonoBehaviour
 
         Vector3 move = right * x + forward * z;
 
-        float currentSpeed = speed;
-        if (Input.GetKey(KeyCode.LeftShift))
+        if (isGrounded)
         {
-            currentSpeed *= sprintMultiplier;
+            isSprinting = Input.GetKey(KeyCode.LeftShift);
         }
-        // keep purely horizontal movement
-        controller.Move(move * currentSpeed * Time.deltaTime);
+
+        if (isGrounded)
+        {
+            float groundSpeed = isSprinting ? speed * sprintMultiplier : speed;
+            Vector3 desiredVelocity = move * groundSpeed;
+            controller.Move(desiredVelocity * Time.deltaTime);
+            horizontalMomentum = desiredVelocity;
+        }
+        else
+        {
+            if (z < 0f)
+            {
+                // gradually reduce horizontal momentum when pressing back in the air
+                float reduce = airBrake * Time.deltaTime;
+                float m = horizontalMomentum.magnitude;
+                m = Mathf.Max(0f, m - reduce);
+                horizontalMomentum = horizontalMomentum.normalized * m;
+            }
+
+            controller.Move(horizontalMomentum * Time.deltaTime);
+        }
 
         //check if the player is on the ground so he can jump
         if (Input.GetButtonDown("Jump") && isGrounded)
