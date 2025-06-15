@@ -419,7 +419,7 @@ GameObject:
   - component: {fileID: 643075552}
   - component: {fileID: 643075551}
   - component: {fileID: 643075550}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Terrain
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -718,7 +718,7 @@ MonoBehaviour:
   groundDistance: 0.4
   groundMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 96
 --- !u!114 &1684944814
 MonoBehaviour:
   m_ObjectHideFlags: 0
