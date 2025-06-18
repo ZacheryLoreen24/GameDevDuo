@@ -1,21 +1,25 @@
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class PlayerInventory : MonoBehaviour
 {
 
     private bool isInventoryOpen = false;
-    private string[] inventory = new string[10]; // Example inventory with 10 slots
+    public string[] inventory = new string[10]; // Example inventory with 10 slots
     public GameObject inventoryObject;
     private TextMeshProUGUI inventoryText;
     private bool isInventoryEmpty = true;
     private bool isInventoryFull = false;
+    public MouseMovement mouseMovment;
+    private float sensitivity;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         inventoryObject.SetActive(false); // Ensure inventory UI is hidden at start
         inventoryText = inventoryObject.GetComponentInChildren<TextMeshProUGUI>();
+        sensitivity = mouseMovment.mouseSensitivity;
     }
 
     // Update is called once per frame
@@ -36,6 +40,20 @@ public class PlayerInventory : MonoBehaviour
         isInventoryOpen = !isInventoryOpen;
         inventoryObject.SetActive(isInventoryOpen);
         Debug.Log("Inventory toggled: " + !isInventoryOpen + " --> " + isInventoryOpen);
+
+        // enable or disable the cursor based on inventory state
+        if (isInventoryOpen)
+        {
+            Cursor.lockState = CursorLockMode.None; // Unlock cursor when inventory is open
+            Cursor.visible = true; // Make cursor visible
+            mouseMovment.mouseSensitivity = 0; // Disable mouse movement when inventory is open
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked; // Lock cursor when inventory is closed
+            Cursor.visible = false; // Hide cursor
+            mouseMovment.mouseSensitivity = sensitivity; // Restore mouse movement sensitivity
+        }
 
         // If inventory is empty, set inventoryObject text to "Inventory Empty"
         if (isInventoryEmpty)
@@ -74,6 +92,8 @@ public class PlayerInventory : MonoBehaviour
                 {
                     inventory[i] = other.gameObject.name; // Add item to the first empty slot
                     Debug.Log("Added " + other.gameObject.name + " to inventory slot " + i);
+                    string temp = inventoryObject.transform.Find("InventoryBase").gameObject.transform.Find("InventorySlot_" + i).gameObject.name;
+                    Debug.Log("TEMP SHIT SHTI SHTI : " + temp);
                     isInventoryEmpty = false; // Inventory is no longer empty
                     break;
                 }
