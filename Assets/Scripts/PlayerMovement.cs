@@ -1,91 +1,90 @@
-using System.Collections;
-using System.Collections.Generic;
+
 using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public CharacterController controller;
-
-    public float speed = 12f;
+    [Header("Speeds")]
+    public float walkSpeed = 6f;
     public float sprintMultiplier = 1.5f;
-    public float gravity = -9.81f * 2;
+
+    [Header("Jump & Gravity")]
     public float jumpHeight = 3f;
-    public float airBrake = 8f; // rate at which backward input slows momentum
+    public float extraGravity = 2f;        // multiplies Physics.gravity.y
+
+    [Header("Air Control")]
+    public float airBrake = 8f;            // slows momentum when holding S
+    public float airControl = 2f;          // small steering while airborne
+
+    [Header("Ground Check")]
     public Transform groundCheck;
-    public float groundDistance = 0.4f;
+    public float groundRadius = 0.3f;
     public LayerMask groundMask;
-    Vector3 velocity;
+
+    Rigidbody rb;
+    Vector2 moveInput;
+    bool jumpPressed;
     bool isGrounded;
-    private bool isSprinting;
-    private Vector3 horizontalMomentum;
-    
+    Vector3 momentum;
 
-    // Update is called once per frame
-    private float groundCheckOffset;
-
-    void Start()
+    void Awake()
     {
-        groundCheckOffset = Mathf.Abs(groundCheck.localPosition.y);
-        isSprinting = false;
-        horizontalMomentum = Vector3.zero;
+        rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true;          // keep capsule upright
     }
 
     void Update()
     {
-        Vector3 checkPos = transform.position + Vector3.down * groundCheckOffset;
-        isGrounded = Physics.CheckSphere(checkPos, groundDistance, groundMask);
+        /* -------- Gather input each frame -------- */
+        moveInput = new Vector2(
+            Input.GetAxisRaw("Horizontal"),   // A / D
+            Input.GetAxisRaw("Vertical"));    // W / S
 
-        if (isGrounded && velocity.y < 0)
-        {
-            velocity.y = -2f;
-        }
+        jumpPressed = Input.GetButtonDown("Jump");
+    }
 
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
+    void FixedUpdate()
+    {
+        /* -------- Ground check -------- */
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundRadius, groundMask);
 
-        // use only the player's yaw rotation for movement so looking straight up or down keeps forward movement
-        float yaw = transform.eulerAngles.y;
-        Quaternion yawRotation = Quaternion.Euler(0f, yaw, 0f);
-        Vector3 right = yawRotation * Vector3.right;
-        Vector3 forward = yawRotation * Vector3.forward;
+        /* -------- Horizontal movement -------- */
+        Vector3 camForward = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
+        Vector3 camRight   = new Vector3(transform.right.x,   0f, transform.right.z).normalized;
 
-        Vector3 move = right * x + forward * z;
+        Vector3 wishDir = (camRight * moveInput.x + camForward * moveInput.y).normalized;
+
+        float speed = Input.GetKey(KeyCode.LeftShift) && isGrounded
+                      ? walkSpeed * sprintMultiplier
+                      : walkSpeed;
 
         if (isGrounded)
         {
-            isSprinting = Input.GetKey(KeyCode.LeftShift);
-        }
-
-        if (isGrounded)
-        {
-            float groundSpeed = isSprinting ? speed * sprintMultiplier : speed;
-            Vector3 desiredVelocity = move * groundSpeed;
-            controller.Move(desiredVelocity * Time.deltaTime);
-            horizontalMomentum = desiredVelocity;
+            /* snap horizontal velocity to desired value */
+            Vector3 desiredVel = wishDir * speed;
+            rb.velocity = new Vector3(desiredVel.x, rb.velocity.y, desiredVel.z);
+            momentum = desiredVel;          // store for airborne use
         }
         else
         {
-            if (z < 0f)
-            {
-                // gradually reduce horizontal momentum when pressing back in the air
-                float reduce = airBrake * Time.deltaTime;
-                float m = horizontalMomentum.magnitude;
-                m = Mathf.Max(0f, m - reduce);
-                horizontalMomentum = horizontalMomentum.normalized * m;
-            }
+            /* keep momentum, allow a little air steering */
+            momentum += wishDir * airControl * Time.fixedDeltaTime;
+            momentum.y = 0f;
 
-            controller.Move(horizontalMomentum * Time.deltaTime);
+            /* air-brake when holding S */
+            if (moveInput.y < 0f)
+                momentum = Vector3.MoveTowards(momentum, Vector3.zero, airBrake * Time.fixedDeltaTime);
+
+            rb.velocity = new Vector3(momentum.x, rb.velocity.y, momentum.z);
         }
 
-        //check if the player is on the ground so he can jump
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        /* -------- Jump -------- */
+        if (jumpPressed && isGrounded)
         {
-            //the equation for jumping
-            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            float jumpVel = Mathf.Sqrt(jumpHeight * -2f * Physics.gravity.y);
+            rb.velocity = new Vector3(rb.velocity.x, jumpVel, rb.velocity.z);
         }
 
-        velocity.y += gravity * Time.deltaTime;
-
-        controller.Move(velocity * Time.deltaTime);
+        /* -------- Extra gravity for snappier falls -------- */
+        rb.AddForce(Physics.gravity * (extraGravity - 1f), ForceMode.Acceleration);
     }
 }
