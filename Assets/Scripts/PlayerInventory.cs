@@ -8,17 +8,15 @@ public class PlayerInventory : MonoBehaviour
     private bool isInventoryOpen = false;
     public string[] inventory = new string[10]; // Example inventory with 10 slots
     public GameObject inventoryObject;
-    private TextMeshProUGUI inventoryText;
-    private bool isInventoryEmpty = true;
     private bool isInventoryFull = false;
     public MouseMovement mouseMovment;
     private float sensitivity;
+    private GameObject slotObjectRef;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         inventoryObject.SetActive(false); // Ensure inventory UI is hidden at start
-        inventoryText = inventoryObject.GetComponentInChildren<TextMeshProUGUI>();
         sensitivity = mouseMovment.mouseSensitivity;
     }
 
@@ -55,25 +53,6 @@ public class PlayerInventory : MonoBehaviour
             mouseMovment.mouseSensitivity = sensitivity; // Restore mouse movement sensitivity
         }
 
-        // If inventory is empty, set inventoryObject text to "Inventory Empty"
-        if (isInventoryEmpty)
-        {
-            inventoryText.text = "Inventory Empty";
-        }
-        else
-        {
-            // If inventory is not empty, display the items in the inventory
-            string inventoryDisplay = "Inventory:\n";
-            for (int i = 0; i < inventory.Length; i++)
-            {
-                if (!string.IsNullOrEmpty(inventory[i]))
-                {
-                    inventoryDisplay += $"{i + 1}: {inventory[i]}\n"; // Display item with its slot number
-                }
-            }
-            inventoryText.text = inventoryDisplay;
-        }
-
     }
 
     private void OnTriggerEnter(Collider other)
@@ -92,9 +71,10 @@ public class PlayerInventory : MonoBehaviour
                 {
                     inventory[i] = other.gameObject.name; // Add item to the first empty slot
                     Debug.Log("Added " + other.gameObject.name + " to inventory slot " + i);
-                    string temp = inventoryObject.transform.Find("InventoryBase").gameObject.transform.Find("InventorySlot_" + i).gameObject.name;
-                    Debug.Log("TEMP SHIT SHTI SHTI : " + temp);
-                    isInventoryEmpty = false; // Inventory is no longer empty
+                    slotObjectRef = inventoryObject.transform.Find("InventoryBase").gameObject.transform.Find("InventorySlot_" + i).gameObject;
+                    InventorySlot slotScriptRef = slotObjectRef.GetComponent<InventorySlot>();
+                    slotScriptRef.SetItem(inventory[i]);
+                    Debug.Log("LOOK AT THIS SHIT: " + slotScriptRef.itemName);
                     break;
                 }
             }

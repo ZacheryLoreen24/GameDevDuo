@@ -12,19 +12,15 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     public Color color1 = new Color(255f, 255f, 255f, 150f);
     public Color color2 = new Color(255f, 255f, 255f, 150f);
 
+    private Image slotImage;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         itemName = playerInventory.inventory[0];
         imageObject = gameObject.transform.GetChild(0).gameObject;
-        if (string.IsNullOrEmpty(itemName))
-        {
-            imageObject.GetComponent<Image>().sprite = null;
-        }
-        else
-        {
-            //imageObject.GetComponent<Image>().sprite = playerInventory.inventory[slotIndex];
-        }
+        slotImage = gameObject.transform.GetChild(0).gameObject.GetComponent<Image>();
+        slotImage.sprite = Resources.Load<Sprite>("Images/" + itemName + "Image");
 
     }
 
@@ -53,23 +49,21 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         if (eventData.button == PointerEventData.InputButton.Left)
         {
             Debug.Log("Left Click!");
-            // Check if gameObject has children and log their names
-            if (gameObject.transform.childCount > 0)
-            {
-                foreach (Transform child in gameObject.transform)
-                {
-                    Debug.Log("Child: " + child.name);
-                }
-            }
-            else
-            {
-                Debug.Log("No children found in " + gameObject.name);
-            }
+            itemName = "ExampleItem";
+            slotImage.sprite = Resources.Load<Sprite>("Images/" + itemName + "Image");
+            slotImage.color = Color.white; // Reset color to white
         }
         else if (eventData.button == PointerEventData.InputButton.Right)
         {
             Debug.Log("Right Click!");
         }
+    }
+
+    public void SetItem(string itemName)
+    {
+        this.itemName = itemName;
+        slotImage.sprite = Resources.Load<Sprite>("Images/" + itemName + "Image");
+        slotImage.color = Color.white; // Reset color to white
     }
 
 }
