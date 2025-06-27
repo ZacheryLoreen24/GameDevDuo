@@ -45,13 +45,51 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     public void OnPointerClick(PointerEventData eventData)
     {
         Debug.Log("CLICKED on " + gameObject.name);
-        // You can check which mouse button too:
+
+        string tempCursorItem = playerInventory.getCursorItem();
+
         if (eventData.button == PointerEventData.InputButton.Left)
         {
             Debug.Log("Left Click!");
-            itemName = "ExampleItem";
-            slotImage.sprite = Resources.Load<Sprite>("Images/" + itemName + "Image");
-            slotImage.color = Color.white; // Reset color to white
+
+            
+            if(string.IsNullOrEmpty(itemName))
+            {
+                if(string.IsNullOrEmpty(tempCursorItem))
+                {
+                    Debug.Log("No item to place in " + gameObject.name);
+                }
+                else
+                {
+                    // Place the cursor item into this slot
+                    itemName = tempCursorItem;
+                    playerInventory.setCursorItem(null); // Clear the cursor item
+                    slotImage.sprite = Resources.Load<Sprite>("Images/" + itemName + "Image");
+                    slotImage.color = Color.white; // Reset color to white
+                    Debug.Log("Placed " + itemName + " in slot " + slotIndex);
+                }
+            }
+            else
+            {
+                if(string.IsNullOrEmpty(tempCursorItem))
+                {
+                    // Move item from this slot to cursor
+                    playerInventory.setCursorItem(itemName);
+                    itemName = null; // Clear this slot
+                    slotImage.sprite = null; // Clear the image
+                    slotImage.color = Color.clear; // Set color to transparent
+                    Debug.Log("Moved " + itemName + " to cursor from slot " + slotIndex);
+                }
+                else
+                {
+                    // Swap items between cursor and this slot
+                    playerInventory.setCursorItem(itemName);
+                    itemName = tempCursorItem;
+                    slotImage.sprite = Resources.Load<Sprite>("Images/" + itemName + "Image");
+                    slotImage.color = Color.white; // Reset color to white
+                    Debug.Log("Swapped " + itemName + " with cursor item in slot " + slotIndex);
+                }
+            }
         }
         else if (eventData.button == PointerEventData.InputButton.Right)
         {

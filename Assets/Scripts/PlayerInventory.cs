@@ -12,12 +12,16 @@ public class PlayerInventory : MonoBehaviour
     public MouseMovement mouseMovment;
     private float sensitivity;
     private GameObject slotObjectRef;
+    private string cursorItem;
+    public GameObject CursorImage;
+    private FollowCursor cursorImageScriptRef;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         inventoryObject.SetActive(false); // Ensure inventory UI is hidden at start
         sensitivity = mouseMovment.mouseSensitivity;
+        cursorImageScriptRef = CursorImage.GetComponent<FollowCursor>();
     }
 
     // Update is called once per frame
@@ -79,5 +83,16 @@ public class PlayerInventory : MonoBehaviour
                 }
             }
         }
+    }
+
+    public void setCursorItem(string newItem)
+    {
+        cursorItem = newItem;
+        cursorImageScriptRef.setCursorItem(newItem);
+    }
+
+    public string getCursorItem()
+    {
+        return cursorItem;
     }
 }
