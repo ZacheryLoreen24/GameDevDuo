@@ -2,6 +2,7 @@ using UnityEngine;
 
 public static class MarchingCubesTables
 {
+
     public static readonly Vector3[] cornerOffsets = new Vector3[8]
     {
         new Vector3(0, 0, 0),
