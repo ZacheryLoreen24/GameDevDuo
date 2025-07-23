@@ -19,66 +19,48 @@ public class CaveGenerator : MonoBehaviour
     public Vector3 noiseOffset = Vector3.zero;
 
     private float[,,] densityMap;
+    private bool[,,] solidMap;
     private Mesh meshy;
     private int seed;
 
 
-    void Start()
+    void Awake()
     {
         seed = transform.parent.GetComponent<CaveChunkGenerator>().seed;
-        GenerateDensity();
-        GenerateMesh();
-    }
-
-    // Generates a density map using Perlin noise
-    void GenerateDensity()
-    {
-        /* 
-         * size + 1 because there is always one more vertex than the number of cubes in each dimension
-         *
-         *  . . . .
-         *  . . . .
-         *  . . . .
-         *
-         * notice how this 2x3 square has 3x4 vertices (each . is a vertex)
-         */
-
+        sizeX = (int)transform.parent.GetComponent<CaveChunkGenerator>().chunkSize;
+        sizeY = (int)transform.parent.GetComponent<CaveChunkGenerator>().chunkSize;
+        sizeZ = (int)transform.parent.GetComponent<CaveChunkGenerator>().chunkSize;
         densityMap = new float[sizeX + 1, sizeY + 1, sizeZ + 1];
-
-        // Go through each index in the density map and assign a pseudorandom value based on Perlin noise
-        for (int x = 0; x <= sizeX; x++)
-        {
-            for (int y = 0; y <= sizeY; y++)
-            {
-                for (int z = 0; z <= sizeZ; z++)
-                {
-                    float xCoord = (x + transform.position.x) * noiseScale;
-                    float yCoord = (y + transform.position.y) * noiseScale;
-                    float zCoord = (z + transform.position.z) * noiseScale;
-
-                    // Apply a seed-based offset to the noise coordinates, creating unique generation each time
-                    float offsetX = (float)seed * 0.1f;
-                    float offsetY = (float)seed * 0.2f;
-                    float offsetZ = (float)seed * 0.3f;
-
-                    float noise = (
-                        Mathf.PerlinNoise(xCoord + offsetX, zCoord + offsetZ) +
-                        Mathf.PerlinNoise(yCoord + offsetY, xCoord + offsetX) +
-                        Mathf.PerlinNoise(zCoord + offsetZ, yCoord + offsetY)
-                    ) / 3f * 2f - 1f;
-
-                    float heightFactor = y / (float)sizeY;
-                    densityMap[x, y, z] = noise - isovalue;
-                }
-            }
-        }
+        solidMap = new bool[sizeX + 1, sizeY + 1, sizeZ + 1];
     }
 
-    void GenerateMesh()
+
+    float calculateNoise(int x, int y, int z)
+    {
+
+        float xCoord = (x + transform.position.x) * noiseScale;// + noiseOffset.x;
+        float yCoord = (y + transform.position.y) * noiseScale;// + noiseOffset.y;
+        float zCoord = (z + transform.position.z) * noiseScale;// + noiseOffset.z;
+
+        // Apply a seed-based offset to the noise coordinates, creating unique generation each time
+        float offsetX = (float)seed * 0.1f;
+        float offsetY = (float)seed * 0.2f;
+        float offsetZ = (float)seed * 0.3f;
+
+        float noise = (
+            Mathf.PerlinNoise(xCoord + offsetX, zCoord + offsetZ) +
+            Mathf.PerlinNoise(yCoord + offsetY, xCoord + offsetX) +
+            Mathf.PerlinNoise(zCoord + offsetZ, yCoord + offsetY)
+        ) / 3f * 2f - 1f;
+
+        return noise;
+    }
+
+    public void GenerateMesh()
     {
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
-
+        
         for (int x = 0; x < sizeX; x++)
         {
             for (int y = 0; y < sizeY; y++)
@@ -179,5 +161,16 @@ public class CaveGenerator : MonoBehaviour
             triangles.Add(startIndex + 1);
             triangles.Add(startIndex + 0);
         }
+    }
+
+    public Vector3Int WorldToLocal(Vector3Int worldPos)
+    {
+        return worldPos - Vector3Int.FloorToInt(transform.position);
+    }
+
+    public void SetMaps(float[,,] density, bool[,,] solid)
+    {
+        densityMap = density;
+        solidMap = solid;
     }
 }

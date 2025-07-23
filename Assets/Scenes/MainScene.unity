@@ -3737,13 +3737,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cavePrefab: {fileID: 743110170399730696, guid: b10449bf12bbe5b448af2087b58f4a95, type: 3}
-  chunksX: 3
-  chunksY: 1
-  chunksZ: 3
+  chunksX: 10
+  chunksY: 2
+  chunksZ: 5
   chunkSize: 32
   noiseOffset: 1000
+  noiseScale: 0.05
+  isovalue: 0
   seed: 0
   randomizeSeed: 1
+  birthLimit: 4
+  deathLimit: 3
+  iterations: 5
+  chunkDimensions: {x: 0, y: 0, z: 0}
 --- !u!4 &1862566737
 Transform:
   m_ObjectHideFlags: 0
