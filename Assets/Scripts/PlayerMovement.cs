@@ -1,19 +1,18 @@
-
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("Speeds")]
     public float walkSpeed = 6f;
     public float sprintMultiplier = 1.5f;
 
     [Header("Jump & Gravity")]
     public float jumpHeight = 3f;
-    public float extraGravity = 2f;        // multiplies Physics.gravity.y
+    public float extraGravity = 2f;
 
     [Header("Air Control")]
-    public float airBrake = 8f;            // slows momentum when holding S
-    public float airControl = 2f;          // small steering while airborne
+    public float airBrake = 8f;
+    public float airControl = 2f;
 
     [Header("Ground Check")]
     public Transform groundCheck;
@@ -21,70 +20,65 @@ public class PlayerMovement : MonoBehaviour
     public LayerMask groundMask;
 
     Rigidbody rb;
-    Vector2 moveInput;
-    bool jumpPressed;
+    Vector2 input;
+    bool jumpQueued;
     bool isGrounded;
     Vector3 momentum;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        rb.freezeRotation = true;          // keep capsule upright
+        rb.constraints = RigidbodyConstraints.FreezeRotationX |
+                         RigidbodyConstraints.FreezeRotationZ;   // keep upright
     }
 
     void Update()
     {
-        /* -------- Gather input each frame -------- */
-        moveInput = new Vector2(
-            Input.GetAxisRaw("Horizontal"),   // A / D
-            Input.GetAxisRaw("Vertical"));    // W / S
-
-        jumpPressed = Input.GetButtonDown("Jump");
+        input = new Vector2(Input.GetAxisRaw("Horizontal"),
+                            Input.GetAxisRaw("Vertical"));
+        jumpQueued |= Input.GetButtonDown("Jump");
     }
 
     void FixedUpdate()
     {
-        /* -------- Ground check -------- */
-        isGrounded = Physics.CheckSphere(groundCheck.position, groundRadius, groundMask);
+        // --- ground check ---
+        isGrounded = Physics.CheckSphere(groundCheck.position,
+                                         groundRadius, groundMask);
 
-        /* -------- Horizontal movement -------- */
-        Vector3 camForward = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
-        Vector3 camRight   = new Vector3(transform.right.x,   0f, transform.right.z).normalized;
+        // --- movement direction uses *body* forward/right (already yawed) ---
+        Vector3 dir = (transform.right * input.x + transform.forward * input.y).normalized;
 
-        Vector3 wishDir = (camRight * moveInput.x + camForward * moveInput.y).normalized;
-
-        float speed = Input.GetKey(KeyCode.LeftShift) && isGrounded
-                      ? walkSpeed * sprintMultiplier
-                      : walkSpeed;
+        float maxSpeed = Input.GetKey(KeyCode.LeftShift) && isGrounded
+                         ? walkSpeed * sprintMultiplier
+                         : walkSpeed;
 
         if (isGrounded)
         {
-            /* snap horizontal velocity to desired value */
-            Vector3 desiredVel = wishDir * speed;
-            rb.velocity = new Vector3(desiredVel.x, rb.velocity.y, desiredVel.z);
-            momentum = desiredVel;          // store for airborne use
+            Vector3 desired = dir * maxSpeed;
+            rb.linearVelocity = new Vector3(desired.x, rb.linearVelocity.y, desired.z);
+            momentum   = desired;
         }
         else
         {
-            /* keep momentum, allow a little air steering */
-            momentum += wishDir * airControl * Time.fixedDeltaTime;
-            momentum.y = 0f;
+            momentum += dir * airControl * Time.fixedDeltaTime;
+            momentum  = Vector3.ClampMagnitude(momentum, maxSpeed);
 
-            /* air-brake when holding S */
-            if (moveInput.y < 0f)
-                momentum = Vector3.MoveTowards(momentum, Vector3.zero, airBrake * Time.fixedDeltaTime);
+            if (input.y < 0)
+                momentum = Vector3.MoveTowards(momentum, Vector3.zero,
+                                               airBrake * Time.fixedDeltaTime);
 
-            rb.velocity = new Vector3(momentum.x, rb.velocity.y, momentum.z);
+            rb.linearVelocity = new Vector3(momentum.x, rb.linearVelocity.y, momentum.z);
         }
 
-        /* -------- Jump -------- */
-        if (jumpPressed && isGrounded)
+        // --- jump ---
+        if (jumpQueued && isGrounded)
         {
-            float jumpVel = Mathf.Sqrt(jumpHeight * -2f * Physics.gravity.y);
-            rb.velocity = new Vector3(rb.velocity.x, jumpVel, rb.velocity.z);
+            float jumpV = Mathf.Sqrt(jumpHeight * -2f * Physics.gravity.y);
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, jumpV, rb.linearVelocity.z);
         }
+        jumpQueued = false;
 
-        /* -------- Extra gravity for snappier falls -------- */
+        // --- extra gravity ---
         rb.AddForce(Physics.gravity * (extraGravity - 1f), ForceMode.Acceleration);
     }
 }

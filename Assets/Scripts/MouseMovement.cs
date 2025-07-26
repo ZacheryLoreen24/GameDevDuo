@@ -1,26 +1,35 @@
-
 using UnityEngine;
 
-public class MouseMovement : MonoBehaviour
+// REQUIREMENTS:
+// • This component lives on the same GameObject that has the Rigidbody.
+// • A child object named "CameraPivot" holds the Camera (or is the Camera itself).
+// • Rigidbody: freeze Rotation X & Z, leave Y free.
+
+[RequireComponent(typeof(Rigidbody))]
+public class MouseLook : MonoBehaviour
 {
-    public Transform playerBody;
-    public float sensitivity = 100f;
+    public Transform pitchPivot;    // drag the Camera or empty pivot here
+    public float sensitivity = 200f;
 
-    float pitch = 0f;
+    Rigidbody rb;
+    float pitch;
 
-    void Start() => Cursor.lockState = CursorLockMode.Locked;
-
-    void Update()
+    void Start()
     {
-        float mouseX = Input.GetAxis("Mouse X") * sensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * sensitivity * Time.deltaTime;
+        Cursor.lockState = CursorLockMode.Locked;
+        rb = GetComponent<Rigidbody>();
+    }
 
-        /* vertical look (pitch) */
-        pitch -= mouseY;
-        pitch = Mathf.Clamp(pitch, -90f, 90f);
-        transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+    void FixedUpdate()              // physics step = best place for MoveRotation
+    {
+        float mouseX = Input.GetAxis("Mouse X") * sensitivity * Time.fixedDeltaTime;
+        float mouseY = Input.GetAxis("Mouse Y") * sensitivity * Time.fixedDeltaTime;
 
-        /* horizontal look (yaw) */
-        playerBody.Rotate(Vector3.up * mouseX);
+        // --- YAW (left / right) ---
+        rb.MoveRotation(rb.rotation * Quaternion.Euler(0f, mouseX, 0f));
+
+        // --- PITCH (up / down) ---
+        pitch = Mathf.Clamp(pitch - mouseY, -90f, 90f);
+        pitchPivot.localRotation = Quaternion.Euler(pitch, 0f, 0f);
     }
 }
