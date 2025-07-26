@@ -1120,7 +1120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10971663968a1e947aeb4aa223c8f575, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pitchPivot: {fileID: 0}
+  pitchPivot: {fileID: 1810469353}
   sensitivity: 200
 --- !u!1 &1810469352
 GameObject:
