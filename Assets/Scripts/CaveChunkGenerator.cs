@@ -44,16 +44,19 @@ public class CaveChunkGenerator : MonoBehaviour
             (int)(chunkSize * chunksY),
             (int)(chunkSize * chunksZ)
         );
-        GenerateSuperDensity();
-        GenerateCave();
-        ApplyCellularAutomata();
-        // CarvePath();
-        UpdateAllDensityMaps();
-        GenerateMeshes();
-
-        BuildCaveWalls();
+        Generate();
     }
 
+    void Generate()
+    {
+        GenerateSuperDensity();
+        GenerateCave();
+        CarvePath();
+        ApplyCellularAutomata();
+        UpdateAllDensityMaps();
+        GenerateMeshes();
+        BuildCaveWalls();
+    }
 
     void GenerateCave()
     {
@@ -156,13 +159,7 @@ public class CaveChunkGenerator : MonoBehaviour
         if (randomizeSeed)
             seed = Random.Range(0, 100000);
 
-        GenerateCave();
-        GenerateSuperDensity();
-        ApplyCellularAutomata();
-        CarvePath();
-        UpdateAllDensityMaps();
-        GenerateMeshes();
-        BuildCaveWalls();
+        Generate();
     }
 
     public CaveGenerator GetChunkAtWorldPosition(Vector3Int worldPos)
@@ -285,7 +282,7 @@ public class CaveChunkGenerator : MonoBehaviour
         {
             pathPoints.Clear();
         }
-        
+
         int sizeX = ((int)chunkSize + 1) * chunksX;
         int sizeY = ((int)chunkSize + 1) * chunksY;
         int sizeZ = ((int)chunkSize + 1) * chunksZ;
@@ -297,42 +294,81 @@ public class CaveChunkGenerator : MonoBehaviour
         pathPoints.Add(currentPos);
 
         System.Random rng = new System.Random();
+        Vector3Int preferredDir = GetWeightedDirection(currentPos, endPos, rng);
+
+        int stepsInDirection = rng.Next(3, 7); // how long to keep this direction
 
         while (Vector3Int.Distance(currentPos, endPos) > 1)
         {
-            Vector3Int direction = Vector3Int.zero;
+            // Occasionally pick a new preferred direction
+            if (stepsInDirection <= 0 || rng.NextDouble() < 0.1)
+            {
+                preferredDir = GetWeightedDirection(currentPos, endPos, rng);
+                stepsInDirection = rng.Next(3, 7);
+            }
 
-            // Move toward the end, but with randomness
-            if (currentPos.x < endPos.x) direction.x = rng.NextDouble() < 0.7 ? 1 : 0;
-            if (currentPos.y < endPos.y) direction.y = rng.NextDouble() < 0.7 ? 1 : 0;
-            if (currentPos.z < endPos.z) direction.z = rng.NextDouble() < 0.7 ? 1 : 0;
+            Vector3Int step = preferredDir;
 
-            // Add randomness (chance to wiggle)
-            if (rng.NextDouble() < 0.2) direction += RandomDirection();
+            // Occasionally wiggle
+            if (rng.NextDouble() < 0.3)
+            {
+                step += RandomDirection();
+            }
 
             // Clamp to valid space
-            currentPos += direction;
+            currentPos += step;
             currentPos.x = Mathf.Clamp(currentPos.x, 0, sizeX - 1);
             currentPos.y = Mathf.Clamp(currentPos.y, 0, sizeY - 1);
             currentPos.z = Mathf.Clamp(currentPos.z, 0, sizeZ - 1);
 
             pathPoints.Add(currentPos);
+            stepsInDirection--;
         }
 
         // Carve the path
         foreach (var point in pathPoints)
         {
-            CarveSphere(point, 3); // radius = 3
+            CarveSphere(point, 6);
         }
+
+        UpdateSolidMap();
     }
 
+    // Returns a direction that generally goes toward the end but might prioritize one axis
+    Vector3Int GetWeightedDirection(Vector3Int from, Vector3Int to, System.Random rng)
+    {
+        Vector3Int delta = to - from;
+
+        float total = Mathf.Abs(delta.x) + Mathf.Abs(delta.y) + Mathf.Abs(delta.z);
+        if (total == 0) return Vector3Int.zero;
+
+        float xChance = Mathf.Abs(delta.x) / total;
+        float yChance = Mathf.Abs(delta.y) / total;
+        float zChance = Mathf.Abs(delta.z) / total;
+
+        float roll = (float)rng.NextDouble();
+
+        if (roll < xChance)
+            return delta.x > 0 ? Vector3Int.right : Vector3Int.left;
+        else if (roll < xChance + yChance)
+            return delta.y > 0 ? Vector3Int.up : Vector3Int.down;
+        else
+            return delta.z > 0 ? Vector3Int.forward : Vector3Int.back;
+    }
+
+
+    // Returns a small random step in one of six directions
     Vector3Int RandomDirection()
     {
-        int x = UnityEngine.Random.Range(-1, 2);
-        int y = UnityEngine.Random.Range(-1, 2);
-        int z = UnityEngine.Random.Range(-1, 2);
-        return new Vector3Int(x, y, z);
+        Vector3Int[] directions = {
+        Vector3Int.right, Vector3Int.left,
+        Vector3Int.up, Vector3Int.down,
+        Vector3Int.forward, Vector3Int.back
+    };
+
+        return directions[UnityEngine.Random.Range(0, directions.Length)];
     }
+
 
     void CarveSphere(Vector3Int center, int radius)
     {
@@ -352,8 +388,8 @@ public class CaveChunkGenerator : MonoBehaviour
                         continue;
 
                     if (Vector3Int.Distance(pos, center) <= radius)
-                    {
-                        superDensityMap[pos.x, pos.y, pos.z] = -1f; // empty/passable
+                    { 
+                        superDensityMap[pos.x, pos.y, pos.z] = Mathf.Min(superDensityMap[pos.x, pos.y, pos.z] + 1f, 1f);
                     }
                 }
             }
@@ -425,6 +461,39 @@ public class CaveChunkGenerator : MonoBehaviour
         return count;
     }
 
+    void UpdateSolidMap()
+    {
+        int sizeX = superSolidMap.GetLength(0);
+        int sizeY = superSolidMap.GetLength(1);
+        int sizeZ = superSolidMap.GetLength(2);
+        for (int x = 0; x < sizeX; x++)
+        {
+            for (int y = 0; y < sizeY; y++)
+            {
+                for (int z = 0; z < sizeZ; z++)
+                {
+                    superSolidMap[x, y, z] = superDensityMap[x, y, z] > isovalue;
+                }
+            }
+        }
+    }
+    public bool showPathGizmos = true;
+    public int gizmoStepInterval = 10;  // draw a dot every 5 path points
+    public int gizmoMaxCount = 100;    // max number of gizmos to draw
 
+    void OnDrawGizmosSelected()
+    {
+        if (!showPathGizmos || pathPoints == null || pathPoints.Count == 0)
+            return;
+
+        Gizmos.color = Color.cyan;
+        int count = 0;
+
+        for (int i = 0; i < pathPoints.Count && count < gizmoMaxCount; i += gizmoStepInterval)
+        {
+            Gizmos.DrawSphere(pathPoints[i], 0.5f);
+            count++;
+        }
+    }
 
 }
