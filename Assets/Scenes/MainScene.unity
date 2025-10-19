@@ -3487,6 +3487,55 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 41733253681031698, guid: a8332cf89f7e12c42b8409ff4e83156d, type: 3}
   m_PrefabInstance: {fileID: 1690951641}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1729344664
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1729344666}
+  - component: {fileID: 1729344665}
+  m_Layer: 0
+  m_Name: TerrainGenerationManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1729344665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1729344664}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 356a70a511594ee4a90f186a13c5c9e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  chunkPrefab: {fileID: 2155345505009330285, guid: d021e5f0c5818724c834303a9ef20557, type: 3}
+  total_chunks_x: 2
+  total_chunks_y: 2
+  total_chunks_z: 2
+  chunk_size: 16
+--- !u!4 &1729344666
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1729344664}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1744027921
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3723,7 +3772,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1862566736
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3737,9 +3786,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cavePrefab: {fileID: 743110170399730696, guid: b10449bf12bbe5b448af2087b58f4a95, type: 3}
-  chunksX: 5
+  chunksX: 2
   chunksY: 2
-  chunksZ: 5
+  chunksZ: 2
   chunkSize: 32
   noiseOffset: 1000
   noiseScale: 0.05
@@ -4304,3 +4353,4 @@ SceneRoots:
   - {fileID: 83045431}
   - {fileID: 1862566737}
   - {fileID: 2080912711}
+  - {fileID: 1729344666}
