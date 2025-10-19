@@ -45,7 +45,6 @@ public class ChunkManager : MonoBehaviour
     // Generate the mesh for this chunk using the Marching Cubes algorithm
     public void GenerateMesh()
     {
-        Debug.Log("Generating mesh for chunk at position: " + transform.position);
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
 
