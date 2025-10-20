@@ -3517,9 +3517,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   chunkPrefab: {fileID: 2155345505009330285, guid: d021e5f0c5818724c834303a9ef20557, type: 3}
-  total_chunks_x: 2
-  total_chunks_y: 2
-  total_chunks_z: 2
+  total_chunks_x: 10
+  total_chunks_y: 3
+  total_chunks_z: 10
   chunk_size: 16
 --- !u!4 &1729344666
 Transform:

@@ -93,36 +93,108 @@ public class TerrainGenerator : MonoBehaviour
     // Carve the main path through the terrain by modifying the density map
     void CarveMainPath()
     {
-        Vector3Int current_pos = Vector3Int.zero;
-        Vector3Int end_pos = new Vector3Int((total_chunks_x - 1) * chunk_size, (total_chunks_y - 1) * chunk_size, (total_chunks_z - 1) * chunk_size);
+        // Create the starting position somewhere in the first chunk
+        Vector3Int current_pos = new Vector3Int(
+            Random.Range(chunk_size / 2, chunk_size),
+            Random.Range(0, chunk_size / 8),
+            Random.Range(chunk_size / 2, chunk_size)
+        );
+
+        // Define the end position in the last chunk
+        Vector3Int end_pos = new Vector3Int(
+            (total_chunks_x - 1) * chunk_size,
+            (total_chunks_y - 1) * chunk_size,
+            (total_chunks_z - 1) * chunk_size
+        );
         Debug.Log("Carving path from " + current_pos + " to " + end_pos);
 
+        // This List contains each point along the path. We will use this to carve spheres at each point to create a tunnel.
         List<Vector3Int> path = new List<Vector3Int>();
+        Vector3Int direction;
+        int step_size;
         while (current_pos != end_pos)
         {
             path.Add(current_pos);
-            current_pos.x += 1;
-            current_pos.y += 1;
-            current_pos.z += 1;
+            direction = GetRandomDirection(current_pos, end_pos);
+            if (direction == Vector3Int.zero)
+            {
+                break;
+            }
+            else if (direction == Vector3Int.right || direction == Vector3Int.left)
+            {
+                step_size = Random.Range(3, (int)((end_pos.x - current_pos.x) / 2));
+            }
+            else if (direction == Vector3Int.up || direction == Vector3Int.down)
+            {
+                step_size = Random.Range(3, 7);
+            }
+            else
+            {
+                step_size = Random.Range(3, (int)((end_pos.z - current_pos.z) / 2));
+            }
+            
+            for (int i = 0; i < step_size; i++)
+            {
+                if (current_pos == end_pos)
+                {
+                    break;
+                }
+                
+                current_pos.x = Mathf.Max(0, Mathf.Min(current_pos.x + direction.x + Random.Range(-1, 3), end_pos.x));
+                current_pos.y = Mathf.Max(0, Mathf.Min(current_pos.y + Random.Range(0, 2), end_pos.y));
+                current_pos.z = Mathf.Max(0, Mathf.Min(current_pos.z + direction.z + Random.Range(-1, 3), end_pos.z));
+
+                path.Add(current_pos);
+            }
+
+            
         }
         path.Add(end_pos);
 
         for (int i = 0; i < path.Count; i++)
         {
-            Debug.Log("Carving at " + path[i]);
-            // density_map[path[i].x, path[i].y, path[i].z] = 1.0f;
-            CarveSphere(path[i]);
+            // Debug.Log("Carving at " + path[i]);
+            CarveSphere(path[i], Random.Range(3, 7));
         }
 
     }
 
-    void CarveSphere(Vector3Int center)
+    Vector3Int GetRandomDirection(Vector3Int current_pos, Vector3Int end_pos)
+    {
+        // Potentially useful values for determining direction
+        Vector3Int delta = end_pos - current_pos;
+        float total = Mathf.Abs(delta.x) + Mathf.Abs(delta.z);
+        if (total == 0) return Vector3Int.zero;
+
+        float x_chance = Mathf.Abs(delta.x) / total;
+        // float y_chance = Mathf.Abs(delta.y) / total;
+        float z_chance = Mathf.Abs(delta.z) / total;
+        // Debug.Log("Chances - X: " + x_chance + " Z: " + z_chance);
+
+        int max_x = total_chunks_x * chunk_size;
+        int max_y = total_chunks_y * chunk_size;
+        int max_z = total_chunks_z * chunk_size;
+
+        float roll = Random.value;
+
+        if (roll < x_chance)
+        {
+            return delta.x > 0 ? Vector3Int.right : Vector3Int.left;
+        }
+        else
+        {
+            return delta.z > 0 ? Vector3Int.forward : Vector3Int.back;
+        }
+
+
+    }
+
+    void CarveSphere(Vector3Int center, int radius)
     {
         int max_x = density_map.GetLength(0);
         int max_y = density_map.GetLength(1);
         int max_z = density_map.GetLength(2);
 
-        int radius = 3;
         for (int x = -radius; x <= radius; x++)
         {
             for (int y = -radius; y <= radius; y++)
@@ -142,11 +214,5 @@ public class TerrainGenerator : MonoBehaviour
             }
         }
     }
-
-    void GenerateTerrain()
-    {
-
-    }
-
 
 }
