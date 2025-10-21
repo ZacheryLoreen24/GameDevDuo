@@ -25,6 +25,9 @@ public class TerrainGenerator : MonoBehaviour
     // Initialize the density map with default values (1.0f for now)
     void InitializeDensityMap()
     {
+        total_chunks_x = Random.Range(10, 25);
+        total_chunks_y = Random.Range(3, 8);
+        total_chunks_z = Random.Range(10, 25);
         // Instantiate dimensions for reusability
         int x_dim = total_chunks_x * (chunk_size + 1);
         int y_dim = total_chunks_y * (chunk_size + 1);
@@ -46,11 +49,11 @@ public class TerrainGenerator : MonoBehaviour
 
         // SET FIRST AND LAST CHUNK VALUES TO 1.0f TO CREATE START AND END "ROOMS"
         // First chunk boundaries range from (0,0,0) to (chunk_size,chunk_size,chunk_size)
-        for (int x = 1; x <= chunk_size; x++)
+        for (int x = 1; x <= chunk_size*2; x++)
         {
-            for (int y = 1; y <= chunk_size; y++)
+            for (int y = 1; y <= chunk_size*2; y++)
             {
-                for (int z = 1; z <= chunk_size; z++)
+                for (int z = 1; z <= chunk_size*2; z++)
                 {
                     density_map[x,y,z] = 1.0f;
                 }
@@ -58,11 +61,11 @@ public class TerrainGenerator : MonoBehaviour
         }
         // Last chunk boundaries range from (total_chunks_x*chunk_size, total_chunks_y*chunk_size, total_chunks_z*chunk_size) to (x_dim, y_dim, z_dim)
         // (3 - 1) * 16 = 32 to (3 * 17) - 3 = 48 = total_chunks_x(y)(z) * chunk_size
-        for (int x = (total_chunks_x - 1) * chunk_size; x < total_chunks_x * chunk_size; x++)
+        for (int x = (total_chunks_x - 2) * chunk_size; x < total_chunks_x * chunk_size; x++)
         {
-            for (int y = (total_chunks_y - 1) * chunk_size; y < total_chunks_y * chunk_size; y++)
+            for (int y = (total_chunks_y - 2) * chunk_size; y < total_chunks_y * chunk_size; y++)
             {
-                for (int z = (total_chunks_z - 1) * chunk_size; z < total_chunks_z * chunk_size; z++)
+                for (int z = (total_chunks_z - 2) * chunk_size; z < total_chunks_z * chunk_size; z++)
                 {
                     density_map[x,y,z] = 1.0f;
                 }
@@ -94,7 +97,7 @@ public class TerrainGenerator : MonoBehaviour
     void CarveMainPath()
     {
         // Create the starting position somewhere in the first chunk
-        Vector3Int current_pos = new Vector3Int(
+        Vector3Int start_pos = new Vector3Int(
             Random.Range(chunk_size / 2, chunk_size),
             Random.Range(0, chunk_size / 8),
             Random.Range(chunk_size / 2, chunk_size)
@@ -102,16 +105,31 @@ public class TerrainGenerator : MonoBehaviour
 
         // Define the end position in the last chunk
         Vector3Int end_pos = new Vector3Int(
-            (total_chunks_x - 1) * chunk_size,
-            (total_chunks_y - 1) * chunk_size,
-            (total_chunks_z - 1) * chunk_size
+            Random.Range((total_chunks_x - 1) * chunk_size, (total_chunks_x * chunk_size) - (chunk_size / 2)),
+            Random.Range((total_chunks_y - 2) * chunk_size, ((total_chunks_y - 1) * chunk_size) - (chunk_size / 2)),
+            Random.Range((total_chunks_z - 1) * chunk_size, (total_chunks_z * chunk_size) - (chunk_size / 2))
         );
-        Debug.Log("Carving path from " + current_pos + " to " + end_pos);
+        
+        CarvePath(start_pos, end_pos);
 
+    }
+
+    void CarveSubPaths(int num_paths)
+    {
+
+    }
+
+    // Carve path
+    void CarvePath(Vector3Int start_pos, Vector3Int end_pos)
+    {
+        Debug.Log("Carving path from " + start_pos + " to " + end_pos);
+
+        Vector3Int current_pos = start_pos;
         // This List contains each point along the path. We will use this to carve spheres at each point to create a tunnel.
         List<Vector3Int> path = new List<Vector3Int>();
         Vector3Int direction;
         int step_size;
+
         while (current_pos != end_pos)
         {
             path.Add(current_pos);
@@ -132,14 +150,14 @@ public class TerrainGenerator : MonoBehaviour
             {
                 step_size = Random.Range(3, (int)((end_pos.z - current_pos.z) / 2));
             }
-            
+
             for (int i = 0; i < step_size; i++)
             {
                 if (current_pos == end_pos)
                 {
                     break;
                 }
-                
+
                 current_pos.x = Mathf.Max(0, Mathf.Min(current_pos.x + direction.x + Random.Range(-1, 3), end_pos.x));
                 current_pos.y = Mathf.Max(0, Mathf.Min(current_pos.y + Random.Range(0, 2), end_pos.y));
                 current_pos.z = Mathf.Max(0, Mathf.Min(current_pos.z + direction.z + Random.Range(-1, 3), end_pos.z));
@@ -147,7 +165,7 @@ public class TerrainGenerator : MonoBehaviour
                 path.Add(current_pos);
             }
 
-            
+
         }
         path.Add(end_pos);
 
@@ -156,8 +174,12 @@ public class TerrainGenerator : MonoBehaviour
             // Debug.Log("Carving at " + path[i]);
             CarveSphere(path[i], Random.Range(3, 7));
         }
-
     }
+
+
+
+
+
 
     Vector3Int GetRandomDirection(Vector3Int current_pos, Vector3Int end_pos)
     {
